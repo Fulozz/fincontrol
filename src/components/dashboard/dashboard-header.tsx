@@ -11,7 +11,7 @@ export function DashboardHeader() {
   useEffect(() => {
     const timer = setInterval(() => {
       setDate(new Date())
-    }, 1000)
+    }, 5000)
 
     return () => clearInterval(timer)
   }, [])
