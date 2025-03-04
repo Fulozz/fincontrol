@@ -121,7 +121,7 @@ export function AddTransactionDialog({ open, onClose }: AddTransactionDialogProp
                         <option value="compras">Compras</option>
                         <option value="pessoal">Pessoal</option>
                         <option value="recebido">Recebido</option>
-                        <option value="other">Other</option>
+                        <option value="outro">Outro</option>
                       </select>
                       {errors.categoria && <p className="mt-1 text-sm text-red-600">{errors.categoria.message}</p>}
                     </div>

@@ -16,7 +16,7 @@ export function DashboardHeader() {
     return () => clearInterval(timer)
   }, [])
 
-  const formattedDate = new Intl.DateTimeFormat("en-US", {
+  const formattedDate = new Intl.DateTimeFormat("pt-BR", {
     weekday: "long",
     year: "numeric",
     month: "long",
