@@ -24,12 +24,11 @@ export function DashboardHeader() {
   }).format(date)
 
   return (
-    <div className="bg-white shadow">
+    <header className="bg-white shadow border h-14 sticky">
       <div className="max-w-7xl mx-auto py-2 px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Financial Dashboard</h1>
-            <p className="mt-1 text-sm text-gray-500">{formattedDate}</p>
           </div>
           <button
             onClick={() => setShowAddTransaction(true)}
@@ -43,6 +42,6 @@ export function DashboardHeader() {
       {showAddTransaction && (
         <AddTransactionDialog open={showAddTransaction} onClose={() => setShowAddTransaction(false)} />
       )}
-    </div>
+    </header>
   )
 }

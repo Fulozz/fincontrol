@@ -1,31 +1,24 @@
-import type React from "react";
-
-import { cookies } from "next/headers";
+// src/app/dashboard/layout.tsx
+""
+import React from "react";
 import { redirect } from "next/navigation";
 import { validateToken } from "@/lib/auth";
-// import
+import DashboardLayoutClient from "@/components/dashboard/dashboard-layout-client";
+import { cookies } from 'next/headers';
 
-export default async function DashboardLayout(
-    { children} : { children: React.ReactNode }
-) {
-    const cookiesStore = await cookies()
-    const token = cookiesStore.get("auth-token")?.value
-    if(!token){
-        redirect("/login")
-    } 
+export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("auth-token")?.value;
 
+  if (!token) {
+    redirect("/login");
+  }
 
-    const isValid = await validateToken(token)
+  const isValid = await validateToken(token);
 
-    if(!isValid){
-        redirect("/login")
-    }
+  if (!isValid) {
+    redirect("/login");
+  }
 
-
-    return(
-        <div className="flex min-h-screen flex-col md:flex-row">
-
-            <main className="flex-1 p-2 md:p-2">{children}</main>
-        </div>
-    )
+  return <DashboardLayoutClient>{children}</DashboardLayoutClient>;
 }
