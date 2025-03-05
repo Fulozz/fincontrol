@@ -58,7 +58,7 @@ export function DashboardSidebar ({ setActiveTab, activeTab }: TDashboardSidebar
       ]
 
     return (
-        <section className="hidden w-64 flex-col bg-background border-r md:flex"> 
+        <section className="hidden w-64 flex-col bg-background h-screen border-r md:flex"> 
           <div className="flex h-14 border-b px-4 items-center gap-2">
             <DollarSignIcon className="h-6 w-6 text-primary" />
               <span className="text-xl font-bold">FinControl</span>
@@ -98,6 +98,15 @@ export function DashboardSidebar ({ setActiveTab, activeTab }: TDashboardSidebar
             </div>
             
           </nav>
+          <div className="absolute bottom-0 w-64 border-t p-4">
+            <div className="flex items-center">
+              <div className="w-10 h-10 bg-gray-300 rounded-full mr-3"></div>
+              <div>
+                <p className="text-sm font-medium">Usuário</p>
+                <p className="text-xs text-gray-500">usuario@email.com</p>
+              </div>
+            </div>
+          </div>
         </section>
     )
 }
