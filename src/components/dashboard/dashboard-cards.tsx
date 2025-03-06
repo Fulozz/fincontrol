@@ -12,6 +12,7 @@ import {
   } from "lucide-react"
 import CurrentBalance from '../cards/current-balance'
 import MonthlyBudget from '../cards/monthly-budget'
+import FinancialHealth from '../cards/financial-health'
 
 
 export default function DashboardCards
@@ -22,9 +23,10 @@ export default function DashboardCards
         gastoAtual: 3200
     }
     return(
-        <div className='grid grid-cols-1 md:grid-cols-3 gap-6 mb-8'>
+        <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8'>
             <CurrentBalance />
             <MonthlyBudget />
+            <FinancialHealth />
         </div>
     )
 }
