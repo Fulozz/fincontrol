@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { AuthProvider } from "@/components/auth-provider"
 import { Toaster } from "react-hot-toast"
+import { ThemeProvider } from "@/components/theme-provider"
+import Sidebar from "@/components/sidebar"
 
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -25,13 +27,22 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  
+  console.log()
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable}`} cz-shortcut-listen="true">
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
         <AuthProvider>
-          {children}
+          <div className="flex h-screen overflow-hidden">
+            <Sidebar />
+            <main className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900 p-4 md:p-6 ml-0 lg:ml-20 transition-all duration-300">
+              <div className="max-w-7xl mx-auto">{children}</div>
+            </main>
+          </div>
           <Toaster position="top-right" />
         </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
