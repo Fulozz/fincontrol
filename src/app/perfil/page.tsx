@@ -2,6 +2,9 @@
 
 import type React from "react"
 
+
+import { redirect } from "next/navigation"
+import { useAuth } from "@/components/auth-provider";
 import { useState } from "react"
 import { useTheme } from "@/components/theme-provider"
 import { Moon, Sun, User, Mail, Lock, LogOut, Save } from "lucide-react"
@@ -9,6 +12,10 @@ import { useRouter } from "next/navigation"
 import toast from "react-hot-toast"
 
 export default function ProfilePage() {
+    const { isAuthenticated } = useAuth();
+    if(!isAuthenticated){
+        redirect('/login')
+    }
   const { theme, setTheme } = useTheme()
   const router = useRouter()
 

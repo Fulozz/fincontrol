@@ -3,6 +3,8 @@
 
 import type React from "react"
 
+import { redirect } from "next/navigation"
+import { useAuth } from "@/components/auth-provider";
 import { useState } from "react"
 import { Plus, Trash2, Calendar, DollarSign, ArrowRight } from "lucide-react"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
@@ -91,6 +93,10 @@ const generateForecastData = (bills: any[], monthlyIncome: number) => {
 }
 
 export default function BillsPage() {
+    const { isAuthenticated } = useAuth();
+    if(!isAuthenticated){
+        redirect('/login')
+    }
   const [bills, setBills] = useState(initialBills)
   const [showAddBill, setShowAddBill] = useState(false)
   const [billType, setBillType] = useState("recurring")

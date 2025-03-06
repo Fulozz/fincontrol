@@ -2,6 +2,9 @@
 
 import type React from "react"
 
+
+import { redirect } from "next/navigation"
+import { useAuth } from "@/components/auth-provider";
 import { useState } from "react"
 import { Download, Filter, Plus, Search, ArrowUp, ArrowDown, CreditCard, Tag, Calendar } from "lucide-react"
 
@@ -131,6 +134,10 @@ const dateFilters = [
 ]
 
 export default function TransactionsPage() {
+    const { isAuthenticated } = useAuth();
+    if(!isAuthenticated){
+        redirect('/login')
+    }
   const [transactions, setTransactions] = useState(transactionsData)
   const [showFilters, setShowFilters] = useState(false)
   const [filters, setFilters] = useState({

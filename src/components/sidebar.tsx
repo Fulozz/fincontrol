@@ -22,7 +22,8 @@ export default function Sidebar() {
   const [isOpen, setIsOpen] = useState(true)
   const [isMobile, setIsMobile] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
-console.log(useAuth())
+  const { isAuthenticated } = useAuth()
+console.log(isAuthenticated)
   // Check if we're on mobile
   useEffect(() => {
     const checkIfMobile = () => {
@@ -39,6 +40,9 @@ console.log(useAuth())
       window.removeEventListener("resize", checkIfMobile)
     }
   }, [])
+  if(!isAuthenticated){
+    return null
+  }
 
   const toggleSidebar = () => {
     setIsOpen(!isOpen)

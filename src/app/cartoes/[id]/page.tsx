@@ -2,10 +2,18 @@
 "use client"
 
 import { useRouter } from "next/navigation"
+
+import { redirect } from "next/navigation"
+import { useAuth } from "@/components/auth-provider";
 import { ArrowLeft, CreditCard, Calendar, Tag, ArrowUp, ArrowDown } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { useCardDetails, useTransactionsData } from "@/hooks/api"
 
+interface PageProps {
+    params: {
+      id: string;
+    };
+  }
 const spendingByCategory = [
   { name: "Alimentação", value: 242.25 },
   { name: "Lazer", value: 39.90 },
@@ -13,7 +21,11 @@ const spendingByCategory = [
   { name: "Transporte", value: 25.50 },
 ]
 
-export default function CardDetails({ params }: { params: { id: string } }) {
+export default function CardDetails({ params }: PageProps) {
+    const { isAuthenticated } = useAuth();
+    if(!isAuthenticated){
+        redirect('/login')
+    }
   const router = useRouter()
   const { card, loading: cardLoading } = useCardDetails(params.id)
   const { transactions, loading: transactionsLoading } = useTransactionsData()

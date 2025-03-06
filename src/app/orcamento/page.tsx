@@ -2,6 +2,9 @@
 
 import type React from "react"
 
+
+import { redirect } from "next/navigation"
+import { useAuth } from "@/components/auth-provider";
 import { useState } from "react"
 import { Plus, Trash2 } from "lucide-react"
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts"
@@ -36,6 +39,10 @@ const months = [
 ]
 
 export default function BudgetPage() {
+    const { isAuthenticated } = useAuth();
+    if(!isAuthenticated){
+        redirect('/login')
+    }
   const [budget, setBudget] = useState(initialBudget)
   const [newCategory, setNewCategory] = useState({ name: "", value: "", color: "#000000" })
   const [showAddCategory, setShowAddCategory] = useState(false)

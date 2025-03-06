@@ -2,6 +2,8 @@
 
 import type React from "react"
 
+import { redirect } from "next/navigation"
+import { useAuth } from "@/components/auth-provider";
 import { useState } from "react"
 import { ArrowDown, ArrowUp, Plus, AlertTriangle, Lightbulb, Target, Calendar, Tag } from "lucide-react"
 import {
@@ -80,7 +82,11 @@ const recentTransactions = [
 export default function Dashboard() {
   const [showAddGoal, setShowAddGoal] = useState(false)
   const [newGoal, setNewGoal] = useState({ name: "", target: "", endDate: "" })
-
+    
+    const { isAuthenticated } = useAuth();
+    if(!isAuthenticated){
+        redirect('/login')
+    }
   const handleAddGoal = (e: React.FormEvent) => {
     e.preventDefault()
     // Here you would add the new goal to your state or database

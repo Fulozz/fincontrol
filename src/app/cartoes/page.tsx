@@ -2,6 +2,9 @@
 
 import type React from "react"
 
+
+import { redirect } from "next/navigation"
+import { useAuth } from "@/components/auth-provider";
 import { useState } from "react"
 import { CreditCard, Plus, Edit, Trash2, ChevronRight } from "lucide-react"
 import Link from "next/link"
@@ -41,6 +44,10 @@ const cardsData = [
 ]
 
 export default function CardsPage() {
+    const { isAuthenticated } = useAuth();
+    if(!isAuthenticated){
+        redirect('/login')
+    }
   const [showAddCard, setShowAddCard] = useState(false)
   const [cards, setCards] = useState(cardsData)
   const [newCard, setNewCard] = useState({

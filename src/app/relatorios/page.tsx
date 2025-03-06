@@ -2,6 +2,9 @@
 
 import type React from "react"
 
+
+import { redirect } from "next/navigation"
+import { useAuth } from "@/components/auth-provider";
 import { useState } from "react"
 import {
   BarChart,
@@ -64,6 +67,10 @@ const dateFilters = [
 ]
 
 export default function ReportsPage() {
+    const { isAuthenticated } = useAuth();
+    if(!isAuthenticated){
+        redirect('/login')
+    }
   const [dateFilter, setDateFilter] = useState("last6months")
   const [startDate, setStartDate] = useState("")
   const [endDate, setEndDate] = useState("")
