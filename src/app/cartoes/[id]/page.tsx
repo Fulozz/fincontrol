@@ -1,8 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, CreditCard, Calendar, DollarSign, Tag, ArrowUp, ArrowDown } from 'lucide-react'
+import { ArrowLeft, CreditCard, Calendar, Tag, ArrowUp, ArrowDown } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { useCardDetails, useTransactionsData } from "@/hooks/api"
 

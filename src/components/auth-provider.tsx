@@ -9,7 +9,7 @@ import toast from "react-hot-toast"
 
 type TAuthContextType = {
     isAuthenticated: boolean
-    isLoading: Boolean
+    isLoading: boolean
     logout: ()=> void
 }
 
@@ -42,6 +42,7 @@ export function AuthProvider ({children }: {children: React.ReactNode}){
                 
             } catch (error) {
                 setIsAuthenticated(false)
+                console.log(error)
                 toast.error("Por favor faça o login novamente.")  
             } finally {
                 setIsLoading(false)

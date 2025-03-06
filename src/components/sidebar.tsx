@@ -22,7 +22,7 @@ export default function Sidebar() {
   const [isOpen, setIsOpen] = useState(true)
   const [isMobile, setIsMobile] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
-
+console.log(useAuth())
   // Check if we're on mobile
   useEffect(() => {
     const checkIfMobile = () => {
