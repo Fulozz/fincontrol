@@ -1,15 +1,14 @@
-"use client"
 import { LoginForm } from "@/components/login-form"
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
-import { useAuth } from "@/components/auth-provider";
+
 import Link from "next/link"
 
 export default async function LoginPage() {
   const cookieStore = await cookies();
   const token = cookieStore.get("auth-token")
-  const { isAuthenticated } = useAuth();
-    if(isAuthenticated){
+
+    if(token){
       redirect("/dashboard")
     }
   

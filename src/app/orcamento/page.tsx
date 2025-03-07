@@ -2,306 +2,261 @@
 
 import type React from "react"
 
-
-import { redirect } from "next/navigation"
-import { useAuth } from "@/components/auth-provider";
 import { useState } from "react"
-import { Plus, Trash2 } from "lucide-react"
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts"
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from "recharts"
+import { Plus, Edit, Trash2 } from "lucide-react"
+import { useBudgetData } from "@/hooks/api"
+import toast from "react-hot-toast"
 
-// Mock data
-const initialBudget = {
-  month: new Date().getMonth() + 1,
-  year: new Date().getFullYear(),
-  total: 3000,
-  categories: [
-    { id: 1, name: "Moradia", value: 900, color: "#FF6384" },
-    { id: 2, name: "Alimentação", value: 500, color: "#36A2EB" },
-    { id: 3, name: "Transporte", value: 300, color: "#FFCE56" },
-    { id: 4, name: "Lazer", value: 300, color: "#4BC0C0" },
-    { id: 5, name: "Outros", value: 200, color: "#9966FF" },
-  ],
-}
-
-const months = [
-  "Janeiro",
-  "Fevereiro",
-  "Março",
-  "Abril",
-  "Maio",
-  "Junho",
-  "Julho",
-  "Agosto",
-  "Setembro",
-  "Outubro",
-  "Novembro",
-  "Dezembro",
-]
+const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8", "#82CA9D", "#A4DE6C", "#D0ED57"]
 
 export default function BudgetPage() {
-    const { isAuthenticated } = useAuth();
-    if(!isAuthenticated){
-        redirect('/login')
-    }
-  const [budget, setBudget] = useState(initialBudget)
-  const [newCategory, setNewCategory] = useState({ name: "", value: "", color: "#000000" })
+  const { budget, loading, error, updateBudget, refreshBudget } = useBudgetData()
   const [showAddCategory, setShowAddCategory] = useState(false)
+  const [newCategory, setNewCategory] = useState({ name: "", value: "", color: "#000000" })
+  const [editingCategory, setEditingCategory] = useState<string | null>(null)
 
-  const handleAddCategory = (e: React.FormEvent) => {
+  const handleAddCategory = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Here you would add the new category to your database
-    const categoryToAdd = {
-      id: budget.categories.length + 1,
-      name: newCategory.name,
-      value: Number.parseFloat(newCategory.value),
-      color: newCategory.color,
+    if (!budget) return
+
+    try {
+      const updatedCategories = [
+        ...budget.categories,
+        { ...newCategory, id: Date.now().toString(), value: Number(newCategory.value) },
+      ]
+      await updateBudget({
+        ...budget,
+        categories: updatedCategories,
+        total: updatedCategories.reduce((sum, cat) => sum + cat.value, 0),
+      })
+      setShowAddCategory(false)
+      setNewCategory({ name: "", value: "", color: "#000000" })
+      toast.success("Categoria adicionada com sucesso!")
+      refreshBudget()
+    } catch (error) {
+      toast.error("Erro ao adicionar categoria")
     }
-
-    const updatedCategories = [...budget.categories, categoryToAdd]
-    const newTotal = updatedCategories.reduce((sum, cat) => sum + cat.value, 0)
-
-    setBudget({
-      ...budget,
-      total: newTotal,
-      categories: updatedCategories,
-    })
-
-    setNewCategory({ name: "", value: "", color: "#000000" })
-    setShowAddCategory(false)
   }
 
-  const handleDeleteCategory = (id: number) => {
-    // Here you would delete the category from your database
-    const updatedCategories = budget.categories.filter((cat) => cat.id !== id)
-    const newTotal = updatedCategories.reduce((sum, cat) => sum + cat.value, 0)
+  const handleUpdateCategory = async (id: string, updatedCategory: { name: string; value: string; color: string }) => {
+    if (!budget) return
 
-    setBudget({
-      ...budget,
-      total: newTotal,
-      categories: updatedCategories,
-    })
+    try {
+      const updatedCategories = budget.categories.map((cat) =>
+        cat.id === id ? { ...cat, ...updatedCategory, value: Number(updatedCategory.value) } : cat,
+      )
+      await updateBudget({
+        ...budget,
+        categories: updatedCategories,
+        total: updatedCategories.reduce((sum, cat) => sum + cat.value, 0),
+      })
+      setEditingCategory(null)
+      toast.success("Categoria atualizada com sucesso!")
+      refreshBudget()
+    } catch (error) {
+      toast.error("Erro ao atualizar categoria")
+    }
   }
 
-  const handleMonthChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setBudget({
-      ...budget,
-      month: Number.parseInt(e.target.value),
-    })
+  const handleDeleteCategory = async (id: string) => {
+    if (!budget) return
+
+    try {
+      const updatedCategories = budget.categories.filter((cat) => cat.id !== id)
+      await updateBudget({
+        ...budget,
+        categories: updatedCategories,
+        total: updatedCategories.reduce((sum, cat) => sum + cat.value, 0),
+      })
+      toast.success("Categoria excluída com sucesso!")
+      refreshBudget()
+    } catch (error) {
+      toast.error("Erro ao excluir categoria")
+    }
   }
 
-  const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setBudget({
-      ...budget,
-      year: Number.parseInt(e.target.value),
-    })
-  }
+  if (loading) return <div>Carregando...</div>
+  if (error) return <div>Erro: {error}</div>
+  if (!budget) return <div>Nenhum orçamento encontrado</div>
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Orçamento</h1>
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Orçamento</h1>
+        <button
+          onClick={() => setShowAddCategory(!showAddCategory)}
+          className="flex items-center px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90"
+        >
+          <Plus size={16} className="mr-2" />
+          Adicionar Categoria
+        </button>
+      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Budget Form */}
+      {showAddCategory && (
         <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-lg font-medium">Definir Orçamento</h2>
-            <div className="flex space-x-2">
-              <select
-                value={budget.month}
-                onChange={handleMonthChange}
-                className="p-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800"
-              >
-                {months.map((month, index) => (
-                  <option key={index} value={index + 1}>
-                    {month}
-                  </option>
-                ))}
-              </select>
-              <select
-                value={budget.year}
-                onChange={handleYearChange}
-                className="p-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800"
-              >
-                {[...Array(5)].map((_, i) => {
-                  const year = new Date().getFullYear() - 2 + i
-                  return (
-                    <option key={year} value={year}>
-                      {year}
-                    </option>
-                  )
-                })}
-              </select>
+          <h2 className="text-lg font-medium mb-4">Nova Categoria</h2>
+          <form onSubmit={handleAddCategory} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label htmlFor="categoryName" className="block text-sm font-medium mb-1">
+                Nome da Categoria
+              </label>
+              <input
+                type="text"
+                id="categoryName"
+                value={newCategory.name}
+                onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
+                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800"
+                required
+              />
             </div>
-          </div>
-
-          <div className="mb-6">
-            <div className="flex justify-between items-center mb-2">
-              <h3 className="text-md font-medium">Categorias</h3>
+            <div>
+              <label htmlFor="categoryValue" className="block text-sm font-medium mb-1">
+                Valor
+              </label>
+              <input
+                type="number"
+                id="categoryValue"
+                value={newCategory.value}
+                onChange={(e) => setNewCategory({ ...newCategory, value: e.target.value })}
+                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800"
+                min="0"
+                step="0.01"
+                required
+              />
+            </div>
+            <div>
+              <label htmlFor="categoryColor" className="block text-sm font-medium mb-1">
+                Cor
+              </label>
+              <input
+                type="color"
+                id="categoryColor"
+                value={newCategory.color}
+                onChange={(e) => setNewCategory({ ...newCategory, color: e.target.value })}
+                className="w-full p-1 h-10 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800"
+                required
+              />
+            </div>
+            <div className="md:col-span-3 flex justify-end space-x-2 mt-4">
               <button
-                onClick={() => setShowAddCategory(!showAddCategory)}
-                className="flex items-center text-primary hover:text-primary/80 text-sm"
+                type="button"
+                onClick={() => setShowAddCategory(false)}
+                className="px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
               >
-                <Plus size={16} className="mr-1" />
-                Adicionar Categoria
+                Cancelar
+              </button>
+              <button type="submit" className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90">
+                Salvar
               </button>
             </div>
-
-            {showAddCategory && (
-              <form onSubmit={handleAddCategory} className="mb-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label htmlFor="categoryName" className="block text-xs font-medium mb-1">
-                      Nome
-                    </label>
-                    <input
-                      type="text"
-                      id="categoryName"
-                      value={newCategory.name}
-                      onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
-                      className="w-full p-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="categoryValue" className="block text-xs font-medium mb-1">
-                      Valor (R$)
-                    </label>
-                    <input
-                      type="number"
-                      id="categoryValue"
-                      value={newCategory.value}
-                      onChange={(e) => setNewCategory({ ...newCategory, value: e.target.value })}
-                      className="w-full p-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800"
-                      min="0"
-                      step="0.01"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="categoryColor" className="block text-xs font-medium mb-1">
-                      Cor
-                    </label>
-                    <input
-                      type="color"
-                      id="categoryColor"
-                      value={newCategory.color}
-                      onChange={(e) => setNewCategory({ ...newCategory, color: e.target.value })}
-                      className="w-full p-1 h-9 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800"
-                      required
-                    />
-                  </div>
-                </div>
-                <div className="flex justify-end space-x-2 mt-4">
-                  <button
-                    type="button"
-                    onClick={() => setShowAddCategory(false)}
-                    className="px-3 py-1 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-3 py-1 text-sm bg-primary text-white rounded-md hover:bg-primary/90"
-                  >
-                    Adicionar
-                  </button>
-                </div>
-              </form>
-            )}
-
-            <div className="space-y-3 max-h-80 overflow-y-auto pr-2">
-              {budget.categories.map((category) => (
-                <div
-                  key={category.id}
-                  className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/30 rounded-lg"
-                >
-                  <div className="flex items-center">
-                    <div className="w-4 h-4 rounded-full mr-3" style={{ backgroundColor: category.color }}></div>
-                    <span>{category.name}</span>
-                  </div>
-                  <div className="flex items-center">
-                    <span className="mr-4 font-medium">
-                      R$ {category.value.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                    </span>
-                    <button
-                      onClick={() => handleDeleteCategory(category.id)}
-                      className="text-gray-500 hover:text-red-500"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-            <div className="flex justify-between items-center">
-              <span className="font-medium">Total do Orçamento:</span>
-              <span className="text-lg font-bold">
-                R$ {budget.total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-              </span>
-            </div>
-          </div>
+          </form>
         </div>
+      )}
 
-        {/* Budget Visualization */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
-          <h2 className="text-lg font-medium mb-6">Visualização do Orçamento</h2>
-
-          <div className="h-64 mb-6">
+          <h2 className="text-xl font-semibold mb-4">Distribuição do Orçamento</h2>
+          <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={budget.categories}
+                  dataKey="value"
+                  nameKey="name"
                   cx="50%"
                   cy="50%"
-                  labelLine={false}
                   outerRadius={80}
                   fill="#8884d8"
-                  dataKey="value"
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  label
                 >
                   {budget.categories.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
+                    <Cell key={`cell-${index}`} fill={entry.color || COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(value) => `R$ ${value}`} />
                 <Legend />
               </PieChart>
             </ResponsiveContainer>
           </div>
+        </div>
 
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
+          <h2 className="text-xl font-semibold mb-4">Categorias do Orçamento</h2>
           <div className="space-y-4">
-            <h3 className="text-md font-medium">Distribuição do Orçamento</h3>
-            <div className="space-y-3">
-              {budget.categories.map((category) => (
-                <div key={category.id} className="space-y-1">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center">
-                      <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: category.color }}></div>
-                      <span className="text-sm">{category.name}</span>
+            {budget.categories.map((category) => (
+              <div key={category.id} className="flex items-center justify-between">
+                {editingCategory === category.id ? (
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault()
+                      handleUpdateCategory(category.id, {
+                        name: e.currentTarget.categoryName.value,
+                        value: e.currentTarget.categoryValue.value,
+                        color: e.currentTarget.categoryColor.value,
+                      })
+                    }}
+                    className="flex-1 flex items-center space-x-2"
+                  >
+                    <input
+                      name="categoryName"
+                      defaultValue={category.name}
+                      className="flex-1 p-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800"
+                    />
+                    <input
+                      name="categoryValue"
+                      type="number"
+                      defaultValue={category.value}
+                      className="w-24 p-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800"
+                    />
+                    <input
+                      name="categoryColor"
+                      type="color"
+                      defaultValue={category.color}
+                      className="w-10 h-8 p-0 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800"
+                    />
+                    <button type="submit" className="text-green-500 hover:text-green-700">
+                      Salvar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditingCategory(null)}
+                      className="text-gray-500 hover:text-gray-700"
+                    >
+                      Cancelar
+                    </button>
+                  </form>
+                ) : (
+                  <>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-4 h-4 rounded-full" style={{ backgroundColor: category.color }}></div>
+                      <span className="font-medium">{category.name}</span>
                     </div>
-                    <div className="text-sm">
-                      <span className="font-medium">
-                        R$ {category.value.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                      </span>
-                      <span className="text-gray-500 dark:text-gray-400 ml-2">
-                        ({((category.value / budget.total) * 100).toFixed(1)}%)
-                      </span>
+                    <div className="flex items-center space-x-4">
+                      <span>R$ {category.value.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
+                      <button
+                        onClick={() => setEditingCategory(category.id)}
+                        className="text-blue-500 hover:text-blue-700"
+                      >
+                        <Edit size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteCategory(category.id)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <Trash2 size={16} />
+                      </button>
                     </div>
-                  </div>
-                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
-                    <div
-                      className="h-1.5 rounded-full"
-                      style={{
-                        width: `${(category.value / budget.total) * 100}%`,
-                        backgroundColor: category.color,
-                      }}
-                    ></div>
-                  </div>
-                </div>
-              ))}
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+          <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <div className="flex justify-between items-center">
+              <span className="font-semibold">Total:</span>
+              <span className="font-semibold">
+                R$ {budget.total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+              </span>
             </div>
           </div>
         </div>

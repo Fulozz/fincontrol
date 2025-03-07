@@ -1,37 +1,53 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-
-import { redirect } from "next/navigation"
-import { useAuth } from "@/components/auth-provider";
-import { ArrowLeft, CreditCard, Calendar, Tag, ArrowUp, ArrowDown } from 'lucide-react'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import { ArrowLeft, CreditCard, Calendar, Tag, ArrowUp, ArrowDown } from "lucide-react"
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
 import { useCardDetails, useTransactionsData } from "@/hooks/api"
 
-interface PageProps {
-    params: {
-      id: string;
-    };
-  }
-const spendingByCategory = [
-  { name: "Alimentação", value: 242.25 },
-  { name: "Lazer", value: 39.90 },
-  { name: "Saúde", value: 45.60 },
-  { name: "Transporte", value: 25.50 },
-]
+interface Transaction {
+  id: string
+  cardId: string
+  description: string
+  category: string
+  date: string
+  amount: number
+  type: "income" | "expense"
+}
 
-export default function CardDetails({ params }: PageProps) {
-    const { isAuthenticated } = useAuth();
-    if(!isAuthenticated){
-        redirect('/login')
-    }
+export default function CardDetails({ params }: { params: { id: string } }) {
   const router = useRouter()
-  const { card, loading: cardLoading } = useCardDetails(params.id)
-  const { transactions, loading: transactionsLoading } = useTransactionsData()
+  const { card, loading: cardLoading, error: cardError } = useCardDetails(params.id)
+  const { transactions, loading: transactionsLoading, error: transactionsError } = useTransactionsData()
+  const [cardTransactions, setCardTransactions] = useState<Transaction[]>([])
+  const [spendingByCategory, setSpendingByCategory] = useState<{ name: string; value: number }[]>([])
+
+  useEffect(() => {
+    if (card && transactions) {
+      const filteredTransactions = transactions.filter((t) => t.cardId === card.id)
+      setCardTransactions(filteredTransactions)
+
+      const categorySpending = filteredTransactions.reduce(
+        (acc, t) => {
+          if (t.type === "expense") {
+            acc[t.category] = (acc[t.category] || 0) + t.amount
+          }
+          return acc
+        },
+        {} as Record<string, number>,
+      )
+
+      setSpendingByCategory(Object.entries(categorySpending).map(([name, value]) => ({ name, value })))
+    }
+  }, [card, transactions])
 
   if (cardLoading || transactionsLoading) {
     return <div>Carregando...</div>
+  }
+
+  if (cardError || transactionsError) {
+    return <div>Erro: {cardError || transactionsError}</div>
   }
 
   if (!card) {
@@ -117,7 +133,7 @@ export default function CardDetails({ params }: PageProps) {
                 </tr>
               </thead>
               <tbody>
-                {transactions.map((transaction: any) => (
+                {cardTransactions.map((transaction) => (
                   <tr key={transaction.id} className="border-b border-gray-200 dark:border-gray-700">
                     <td className="py-3">{transaction.description}</td>
                     <td className="py-3">
@@ -154,3 +170,4 @@ export default function CardDetails({ params }: PageProps) {
     </div>
   )
 }
+

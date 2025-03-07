@@ -2,54 +2,15 @@
 
 import type React from "react"
 
-
-import { redirect } from "next/navigation"
-import { useAuth } from "@/components/auth-provider";
 import { useState } from "react"
 import { CreditCard, Plus, Edit, Trash2, ChevronRight } from "lucide-react"
 import Link from "next/link"
-
-// Mock data
-const cardsData = [
-  {
-    id: 1,
-    name: "Nubank",
-    lastDigits: "4567",
-    limit: 5000,
-    dueDate: 10,
-    closingDate: 3,
-    type: "Crédito",
-    color: "#8A05BE",
-  },
-  {
-    id: 2,
-    name: "Itaú",
-    lastDigits: "1234",
-    limit: 3500,
-    dueDate: 15,
-    closingDate: 8,
-    type: "Crédito",
-    color: "#EC7000",
-  },
-  {
-    id: 3,
-    name: "Santander",
-    lastDigits: "9876",
-    limit: 7000,
-    dueDate: 20,
-    closingDate: 13,
-    type: "Crédito",
-    color: "#EC0000",
-  },
-]
+import { useCardsData } from "@/hooks/api"
+import toast from "react-hot-toast"
 
 export default function CardsPage() {
-    const { isAuthenticated } = useAuth();
-    if(!isAuthenticated){
-        redirect('/login')
-    }
+  const { cards, loading, error, addCard, updateCard, deleteCard } = useCardsData()
   const [showAddCard, setShowAddCard] = useState(false)
-  const [cards, setCards] = useState(cardsData)
   const [newCard, setNewCard] = useState({
     name: "",
     lastDigits: "",
@@ -60,33 +21,43 @@ export default function CardsPage() {
     color: "#000000",
   })
 
-  const handleAddCard = (e: React.FormEvent) => {
+  const handleAddCard = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Here you would add the new card to your database
-    const cardToAdd = {
-      ...newCard,
-      id: cards.length + 1,
-      limit: Number.parseFloat(newCard.limit as string),
-      dueDate: Number.parseInt(newCard.dueDate as string),
-      closingDate: Number.parseInt(newCard.closingDate as string),
+    try {
+      const cardToAdd = {
+        ...newCard,
+        limit: Number.parseFloat(newCard.limit as string),
+        dueDate: Number.parseInt(newCard.dueDate as string),
+        closingDate: Number.parseInt(newCard.closingDate as string),
+      }
+      await addCard(cardToAdd)
+      setShowAddCard(false)
+      setNewCard({
+        name: "",
+        lastDigits: "",
+        limit: "",
+        dueDate: "",
+        closingDate: "",
+        type: "Crédito",
+        color: "#000000",
+      })
+      toast.success("Cartão adicionado com sucesso!")
+    } catch (error) {
+      toast.error("Erro ao adicionar cartão")
     }
-    setCards([...cards, cardToAdd])
-    setShowAddCard(false)
-    setNewCard({
-      name: "",
-      lastDigits: "",
-      limit: "",
-      dueDate: "",
-      closingDate: "",
-      type: "Crédito",
-      color: "#000000",
-    })
   }
 
-  const handleDeleteCard = (id: number) => {
-    // Here you would delete the card from your database
-    setCards(cards.filter((card) => card.id !== id))
+  const handleDeleteCard = async (id: string) => {
+    try {
+      await deleteCard(id)
+      toast.success("Cartão excluído com sucesso!")
+    } catch (error) {
+      toast.error("Erro ao excluir cartão")
+    }
   }
+
+  if (loading) return <div>Carregando...</div>
+  if (error) return <div>Erro: {error}</div>
 
   return (
     <div className="space-y-6">

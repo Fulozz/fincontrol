@@ -5,7 +5,6 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { LayoutDashboard, CreditCard, PieChart, Receipt, CalendarClock, BarChart3, User, Menu, X, ChevronLeft, ChevronRight, Wallet } from 'lucide-react'
 import clsx from "clsx"
-import { useAuth } from "@/components/auth-provider";
 
 const navItems = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
@@ -22,8 +21,7 @@ export default function Sidebar() {
   const [isOpen, setIsOpen] = useState(true)
   const [isMobile, setIsMobile] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
-  const { isAuthenticated } = useAuth()
-console.log(isAuthenticated)
+
   // Check if we're on mobile
   useEffect(() => {
     const checkIfMobile = () => {
@@ -40,9 +38,6 @@ console.log(isAuthenticated)
       window.removeEventListener("resize", checkIfMobile)
     }
   }, [])
-  if(!isAuthenticated){
-    return null
-  }
 
   const toggleSidebar = () => {
     setIsOpen(!isOpen)
@@ -77,7 +72,7 @@ console.log(isAuthenticated)
           {
             "w-64": isOpen && !isMobile,
             "w-20": !isOpen && !isMobile,
-            "w-[16rem]": mobileOpen && isMobile,
+            "w-64": mobileOpen && isMobile,
             "-translate-x-full": !mobileOpen && isMobile,
           },
         )}
@@ -162,3 +157,4 @@ console.log(isAuthenticated)
     </>
   )
 }
+

@@ -2,127 +2,12 @@
 
 import type React from "react"
 
-
-import { redirect } from "next/navigation"
-import { useAuth } from "@/components/auth-provider";
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Download, Filter, Plus, Search, ArrowUp, ArrowDown, CreditCard, Tag, Calendar } from "lucide-react"
-
-// Mock data
-const transactionsData = [
-  {
-    id: 1,
-    description: "Supermercado",
-    amount: 152.35,
-    date: "2023-06-01",
-    category: "Alimentação",
-    cardName: "Nubank",
-    type: "expense",
-  },
-  {
-    id: 2,
-    description: "Salário",
-    amount: 3500,
-    date: "2023-06-05",
-    category: "Receita",
-    cardName: "Conta Corrente",
-    type: "income",
-  },
-  {
-    id: 3,
-    description: "Netflix",
-    amount: 39.9,
-    date: "2023-06-07",
-    category: "Lazer",
-    cardName: "Itaú",
-    type: "expense",
-  },
-  {
-    id: 4,
-    description: "Uber",
-    amount: 25.5,
-    date: "2023-06-10",
-    category: "Transporte",
-    cardName: "Nubank",
-    type: "expense",
-  },
-  {
-    id: 5,
-    description: "Restaurante",
-    amount: 89.9,
-    date: "2023-06-12",
-    category: "Alimentação",
-    cardName: "Santander",
-    type: "expense",
-  },
-  {
-    id: 6,
-    description: "Farmácia",
-    amount: 45.6,
-    date: "2023-06-15",
-    category: "Saúde",
-    cardName: "Nubank",
-    type: "expense",
-  },
-  {
-    id: 7,
-    description: "Freelance",
-    amount: 500,
-    date: "2023-06-18",
-    category: "Receita",
-    cardName: "Conta Corrente",
-    type: "income",
-  },
-  {
-    id: 8,
-    description: "Shopping",
-    amount: 199.9,
-    date: "2023-06-20",
-    category: "Vestuário",
-    cardName: "Itaú",
-    type: "expense",
-  },
-  {
-    id: 9,
-    description: "Conta de Luz",
-    amount: 275.78,
-    date: "2023-06-22",
-    category: "Moradia",
-    cardName: "Conta Corrente",
-    type: "expense",
-  },
-  {
-    id: 10,
-    description: "Internet",
-    amount: 120,
-    date: "2023-06-25",
-    category: "Moradia",
-    cardName: "Conta Corrente",
-    type: "expense",
-  },
-  {
-    id: 11,
-    description: "Academia",
-    amount: 99.9,
-    date: "2023-06-28",
-    category: "Saúde",
-    cardName: "Nubank",
-    type: "expense",
-  },
-  {
-    id: 12,
-    description: "Presente",
-    amount: 150,
-    date: "2023-06-30",
-    category: "Outros",
-    cardName: "Santander",
-    type: "expense",
-  },
-]
+import { useTransactionsData, useCardsData } from "@/hooks/api"
+import toast from "react-hot-toast"
 
 const categories = ["Todas", "Alimentação", "Moradia", "Transporte", "Lazer", "Saúde", "Vestuário", "Receita", "Outros"]
-
-const cards = ["Todos", "Nubank", "Itaú", "Santander", "Conta Corrente"]
 
 const dateFilters = [
   { id: "all", name: "Todos" },
@@ -134,11 +19,9 @@ const dateFilters = [
 ]
 
 export default function TransactionsPage() {
-    const { isAuthenticated } = useAuth();
-    if(!isAuthenticated){
-        redirect('/login')
-    }
-  const [transactions, setTransactions] = useState(transactionsData)
+  const { transactions, loading, error, addTransaction, updateTransaction, deleteTransaction, refreshTransactions } =
+    useTransactionsData()
+  const { cards } = useCardsData()
   const [showFilters, setShowFilters] = useState(false)
   const [filters, setFilters] = useState({
     search: "",
@@ -154,7 +37,7 @@ export default function TransactionsPage() {
     amount: "",
     date: new Date().toISOString().split("T")[0],
     category: "Alimentação",
-    cardName: "Nubank",
+    cardId: "",
     type: "expense",
   })
 
@@ -166,96 +49,65 @@ export default function TransactionsPage() {
     })
   }
 
-  const handleAddTransaction = (e: React.FormEvent) => {
+  const handleAddTransaction = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Here you would add the new transaction to your database
-    const transactionToAdd = {
-      ...newTransaction,
-      id: transactions.length + 1,
-      amount: Number.parseFloat(newTransaction.amount as string),
+    try {
+      const transactionToAdd = {
+        ...newTransaction,
+        amount: Number.parseFloat(newTransaction.amount as string),
+      }
+      await addTransaction(transactionToAdd)
+      setShowAddTransaction(false)
+      setNewTransaction({
+        description: "",
+        amount: "",
+        date: new Date().toISOString().split("T")[0],
+        category: "Alimentação",
+        cardId: "",
+        type: "expense",
+      })
+      toast.success("Transação adicionada com sucesso!")
+      refreshTransactions()
+    } catch (error) {
+      toast.error("Erro ao adicionar transação")
     }
-    setTransactions([transactionToAdd, ...transactions])
-    setShowAddTransaction(false)
-    setNewTransaction({
-      description: "",
-      amount: "",
-      date: new Date().toISOString().split("T")[0],
-      category: "Alimentação",
-      cardName: "Nubank",
-      type: "expense",
-    })
+  }
+
+  const handleDeleteTransaction = async (id: string) => {
+    try {
+      await deleteTransaction(id)
+      toast.success("Transação excluída com sucesso!")
+      refreshTransactions()
+    } catch (error) {
+      toast.error("Erro ao excluir transação")
+    }
   }
 
   const applyFilters = () => {
-    let filtered = transactionsData
-
-    // Apply search filter
-    if (filters.search) {
-      const searchLower = filters.search.toLowerCase()
-      filtered = filtered.filter(
-        (t) => t.description.toLowerCase().includes(searchLower) || t.category.toLowerCase().includes(searchLower),
-      )
+    const filterParams: any = {}
+    if (filters.category !== "Todas") filterParams.category = filters.category
+    if (filters.card !== "Todos") filterParams.cardId = filters.card
+    if (filters.dateFilter === "custom") {
+      filterParams.startDate = filters.startDate
+      filterParams.endDate = filters.endDate
+    } else if (filters.dateFilter !== "all") {
+      // Implement date range logic for other filter options
+      // For example:
+      const today = new Date()
+      if (filters.dateFilter === "last30") {
+        filterParams.startDate = new Date(today.setDate(today.getDate() - 30)).toISOString().split("T")[0]
+      }
+      // Implement other date filter options...
     }
-
-    // Apply category filter
-    if (filters.category !== "Todas") {
-      filtered = filtered.filter((t) => t.category === filters.category)
-    }
-
-    // Apply card filter
-    if (filters.card !== "Todos") {
-      filtered = filtered.filter((t) => t.cardName === filters.card)
-    }
-
-    // Apply date filter
-    const today = new Date()
-    const thirtyDaysAgo = new Date(today)
-    thirtyDaysAgo.setDate(today.getDate() - 30)
-
-    const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1)
-
-    const lastMonth = new Date(today)
-    lastMonth.setMonth(today.getMonth() - 1)
-
-    const firstDayOfLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1)
-    const lastDayOfLastMonth = new Date(today.getFullYear(), today.getMonth(), 0)
-
-    const firstDayOfYear = new Date(today.getFullYear(), 0, 1)
-
-    switch (filters.dateFilter) {
-      case "last30":
-        filtered = filtered.filter((t) => new Date(t.date) >= thirtyDaysAgo)
-        break
-      case "thisMonth":
-        filtered = filtered.filter((t) => new Date(t.date) >= firstDayOfMonth)
-        break
-      case "lastMonth":
-        filtered = filtered.filter(
-          (t) => new Date(t.date) >= firstDayOfLastMonth && new Date(t.date) <= lastDayOfLastMonth,
-        )
-        break
-      case "thisYear":
-        filtered = filtered.filter((t) => new Date(t.date) >= firstDayOfYear)
-        break
-      case "custom":
-        if (filters.startDate) {
-          filtered = filtered.filter((t) => new Date(t.date) >= new Date(filters.startDate))
-        }
-        if (filters.endDate) {
-          filtered = filtered.filter((t) => new Date(t.date) <= new Date(filters.endDate))
-        }
-        break
-    }
-
-    return filtered
+    refreshTransactions(filterParams)
   }
 
-  const filteredTransactions = applyFilters()
+  useEffect(() => {
+    applyFilters()
+  }, [filters])
 
-  const exportToExcel = () => {
-    // Here you would implement the Excel export functionality
-    alert("Exportando para Excel...")
-  }
+  if (loading) return <div>Carregando...</div>
+  if (error) return <div>Erro: {error}</div>
 
   return (
     <div className="space-y-6">
@@ -270,7 +122,7 @@ export default function TransactionsPage() {
             Filtros
           </button>
           <button
-            onClick={exportToExcel}
+            onClick={() => {}}
             className="flex items-center px-3 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-md border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
           >
             <Download size={16} className="mr-2" />
@@ -333,9 +185,9 @@ export default function TransactionsPage() {
                 onChange={handleFilterChange}
                 className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800"
               >
-                {cards.map((card, index) => (
-                  <option key={index} value={card}>
-                    {card}
+                {cards.map((card) => (
+                  <option key={card.id} value={card.id}>
+                    {card.name}
                   </option>
                 ))}
               </select>
@@ -479,18 +331,16 @@ export default function TransactionsPage() {
               </label>
               <select
                 id="cardName"
-                value={newTransaction.cardName}
-                onChange={(e) => setNewTransaction({ ...newTransaction, cardName: e.target.value })}
+                value={newTransaction.cardId}
+                onChange={(e) => setNewTransaction({ ...newTransaction, cardId: e.target.value })}
                 className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800"
                 required
               >
-                {cards
-                  .filter((c) => c !== "Todos")
-                  .map((card, index) => (
-                    <option key={index} value={card}>
-                      {card}
-                    </option>
-                  ))}
+                {cards.map((card) => (
+                  <option key={card.id} value={card.id}>
+                    {card.name}
+                  </option>
+                ))}
               </select>
             </div>
             <div className="md:col-span-2 flex justify-end space-x-2 mt-4">
@@ -530,10 +380,13 @@ export default function TransactionsPage() {
                 <th className="px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">
                   Valor
                 </th>
+                <th className="px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">
+                  Ações
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-              {filteredTransactions.map((transaction) => (
+              {transactions.map((transaction) => (
                 <tr key={transaction.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30">
                   <td className="px-6 py-4 whitespace-nowrap">{transaction.description}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -545,7 +398,7 @@ export default function TransactionsPage() {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <CreditCard size={14} className="text-gray-400 mr-2" />
-                      {transaction.cardName}
+                      {cards.find((card) => card.id === transaction.cardId)?.name || "N/A"}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -566,15 +419,16 @@ export default function TransactionsPage() {
                       R$ {transaction.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                     </div>
                   </td>
-                </tr>
-              ))}
-              {filteredTransactions.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
-                    Nenhuma transação encontrada
+                  <td className="px-6 py-4 whitespace-nowrap text-right">
+                    <button
+                      onClick={() => handleDeleteTransaction(transaction.id)}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      Excluir
+                    </button>
                   </td>
                 </tr>
-              )}
+              ))}
             </tbody>
           </table>
         </div>
